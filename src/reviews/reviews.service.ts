@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './review.entity';
 import { Book } from '../books/book.entity';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ReviewsService {
@@ -13,7 +14,7 @@ export class ReviewsService {
     private booksRepository: Repository<Book>,
   ) { }
 
-  async createReview(bookId: number, reviewData: { rating: number; comment: string }): Promise<Review> {
+  async createReview(bookId: number, reviewData: CreateReviewDto): Promise<Review> {
     const book = await this.booksRepository.findOne({ where: { id: bookId } });
 
     if (!book) {
