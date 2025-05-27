@@ -1,49 +1,57 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
-
-interface Book {
-    id: number;
-    title: string;
-    author: string;
-    avgRating: number;
-    reviews: Review[];
-}
+import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Book } from './book.entity';
+import { BooksService } from './books.service';
+import { BookStatsService } from './book-stats.service';
+import { ReviewsService } from 'src/reviews/reviews.service';
 
 interface Review {
-    id: number;
-    bookId: number;
-    rating: number;
-    comment: string;
+  rating: number;
+  comment: string;
 }
 
 @Controller('books')
 export class BooksController {
-    private books = [
-        { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', avgRating: 4.5, reviews: [] },
-        { id: 2, title: '1984', author: 'George Orwell', avgRating: 4.0, reviews: [] },
-        { id: 3, title: 'To Kill a Mockingbird', author: 'Harper Lee', avgRating: 4.7, reviews: [] },
-    ];
+  // private books = [
+  //     { id: 1, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', avgRating: 4.5, reviews: [] },
+  //     { id: 2, title: '1984', author: 'George Orwell', avgRating: 4.0, reviews: [] },
+  //     { id: 3, title: 'To Kill a Mockingbird', author: 'Harper Lee', avgRating: 4.7, reviews: [] },
+  // ];
 
-    @Get()
-    getBooks() {
-        return this.books;
-    }
+  constructor(
+    private readonly booksService: BooksService,
+    private readonly bookStatsService: BookStatsService,
+    private readonly reviewsService: ReviewsService
+  ) { }
 
-    @Get(':id')
-    getBook(@Param('id') id: string) {
-        return this.books.find((book) => book.id === parseInt(id));
-    }
+  @Get()
+  async getBooks(): Promise<Book[]> {
+    const books = await this.booksService.findAll();
+    return books.map(book => ({
+      ...book,
+      avgRating: this.bookStatsService.calculateAvgRating(book.reviews)
+    }));
+  }
 
-    @Post()
-    createBook(@Body() book: Book) {
-        this.books.push(book);
-        return book;
-    }
+  @Get(':id')
+  async getBook(@Param('id') id: string) {
+    const book = await this.booksService.findOne(parseInt(id));
 
-    @Post(':id/reviews')
-    createReview(@Param('id') id: string, @Body() review: Review) {
-        const book = this.books.find((book) => book.id === parseInt(id));
-        book.reviews.push(review);
-        book.avgRating = book.reviews.length > 0 ? Math.round((book.reviews.reduce((acc, review) => acc + review.rating, 0) / book.reviews.length) * 10) / 10 : review.rating;
-        return review;
-    }
+    return {
+      ...book,
+      avgRating: this.bookStatsService.calculateAvgRating(book.reviews)
+    };
+  }
+
+  @Post()
+  async createBook(@Body() bookData: Partial<Book>): Promise<Book> {
+    return this.booksService.create(bookData);
+  }
+
+  @Post(':id/reviews')
+  async createReview(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() reviewData: { rating: number; comment: string },
+  ): Promise<Review> {
+    return this.reviewsService.createReview(id, reviewData);
+  }
 }
