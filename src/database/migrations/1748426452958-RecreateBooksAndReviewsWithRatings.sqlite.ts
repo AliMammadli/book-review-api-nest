@@ -1,33 +1,31 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class RecreateBooksAndReviewsWithRatings1748426452958 implements MigrationInterface {
-  name = 'RecreateBooksAndReviewsWithRatings1748426452958';
+export class RecreateBooksAndReviewsWithRatingsSqlite1748426452958 implements MigrationInterface {
+  name = 'RecreateBooksAndReviewsWithRatingsSqlite1748426452958';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Drop existing tables and views
+    // Drop existing tables and views in correct order for SQLite
     await queryRunner.query(`DROP VIEW IF EXISTS book_ratings`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "review" CASCADE`);
-    await queryRunner.query(`DROP TABLE IF EXISTS "book" CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "review"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "book"`);
 
     // Create book table with average_rating column
     await queryRunner.query(`
       CREATE TABLE "book" (
-        "id" SERIAL NOT NULL,
-        "title" character varying NOT NULL,
-        "author" character varying NOT NULL,
-        "average_rating" DECIMAL(3,2) DEFAULT 0,
-        CONSTRAINT "PK_book" PRIMARY KEY ("id")
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        "title" varchar NOT NULL,
+        "author" varchar NOT NULL,
+        "average_rating" decimal(3,2) DEFAULT 0
       )
     `);
 
     // Create review table
     await queryRunner.query(`
       CREATE TABLE "review" (
-        "id" SERIAL NOT NULL,
+        "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         "rating" integer NOT NULL,
-        "comment" character varying NOT NULL,
+        "comment" varchar NOT NULL,
         "bookId" integer NOT NULL,
-        CONSTRAINT "PK_review" PRIMARY KEY ("id"),
         CONSTRAINT "FK_review_book" FOREIGN KEY ("bookId") REFERENCES "book"("id") ON DELETE CASCADE
       )
     `);
@@ -43,7 +41,7 @@ export class RecreateBooksAndReviewsWithRatings1748426452958 implements Migratio
 
     // Create book ratings view
     await queryRunner.query(`
-      CREATE OR REPLACE VIEW book_ratings AS
+      CREATE VIEW book_ratings AS
       SELECT
         b.id as book_id,
         COALESCE(AVG(r.rating), 0) as avg_rating,
@@ -56,9 +54,9 @@ export class RecreateBooksAndReviewsWithRatings1748426452958 implements Migratio
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP VIEW IF EXISTS book_ratings`);
-    await queryRunner.query(`DROP INDEX "IDX_book_average_rating"`);
-    await queryRunner.query(`DROP INDEX "IDX_review_bookId"`);
-    await queryRunner.query(`DROP TABLE "review"`);
-    await queryRunner.query(`DROP TABLE "book"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_book_average_rating"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_review_bookId"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "review"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "book"`);
   }
 }

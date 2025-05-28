@@ -22,6 +22,8 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/database/typeorm.config.ts",
     "migration:create": "npm run typeorm -- migration:create",
     "migration:run": "npm run typeorm -- migration:run -d src/database/typeorm.config.ts",
+    "migration:run:dev": "NODE_ENV=development npm run migration:run",
+    "migration:run:prod": "NODE_ENV=production npm run migration:run",
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/typeorm.config.ts"
   },
   "dependencies": {
