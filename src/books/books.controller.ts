@@ -3,12 +3,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiOkResponse, A
 import { Book } from './book.entity';
 import { BooksService } from './books.service';
 import { BookStatsService } from './book-stats.service';
-import { ReviewsService } from 'src/reviews/reviews.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { BookResponseDto } from './dto/book-response.dto';
 import { ReviewResponseDto } from '../reviews/dto/review-response.dto';
-import { Review } from 'src/reviews/review.entity';
+import { Review } from '../reviews/review.entity';
 import { GetBooksQueryDto } from './dto/get-books-query.dto';
 
 
