@@ -1,17 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { BooksModule } from '../src/books/books.module';
 import { ReviewsModule } from '../src/reviews/reviews.module';
 import { Book } from '../src/books/book.entity';
 import { Review } from '../src/reviews/review.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
 
 describe('BooksController (e2e)', () => {
   let app: INestApplication;
   let book1Id: number;
   let book2Id: number;
+  let dataSource: DataSource;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -21,6 +22,7 @@ describe('BooksController (e2e)', () => {
           database: ':memory:',
           entities: [Book, Review],
           synchronize: true,
+          logging: false,
         }),
         BooksModule,
         ReviewsModule,
@@ -29,12 +31,27 @@ describe('BooksController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+
+    // Get the DataSource and create the book_ratings view
+    dataSource = app.get(DataSource);
+    await dataSource.query(`
+      CREATE VIEW book_ratings AS
+      SELECT
+        b.id as book_id,
+        COALESCE(AVG(r.rating), 0) as avg_rating,
+        COUNT(r.id) as review_count
+      FROM book b
+      LEFT JOIN review r ON b.id = r.bookId
+      GROUP BY b.id
+    `);
   });
 
   beforeEach(async () => {
     // Clear the database
     const bookRepository = app.get(getRepositoryToken(Book));
     const reviewRepository = app.get(getRepositoryToken(Review));
+
+    // Clearing tables is done here to reset data before each test
     await reviewRepository.clear();
     await bookRepository.clear();
 
@@ -171,4 +188,4 @@ describe('BooksController (e2e)', () => {
         .expect(404);
     });
   });
-}); 
+});
