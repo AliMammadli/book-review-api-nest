@@ -13,28 +13,19 @@ export class BooksService {
 
   async findAll(queryDto?: GetBooksQueryDto): Promise<Book[]> {
     const queryBuilder = this.booksRepository.createQueryBuilder('book')
-      .leftJoinAndSelect('book.reviews', 'review');
-
-    const avgRatingSubquery = this.booksRepository
-      .createQueryBuilder('b')
-      .leftJoin('b.reviews', 'r')
-      .select('b.id', 'bookId')
-      .addSelect('COALESCE(AVG(r.rating), 0)', 'avgRating')
-      .groupBy('b.id');
-
-    queryBuilder
-      .leftJoin(`(${avgRatingSubquery.getQuery()})`, 'avg', 'book.id = avg.bookId')
-      .addSelect('avg.avgRating', 'book_avgRating')
-      .setParameters(avgRatingSubquery.getParameters());
+      .leftJoinAndSelect('book.reviews', 'review')
+      .leftJoin('book_ratings', 'ratings', 'book.id = ratings.book_id')
+      .addSelect('ratings.avg_rating', 'book_average_rating')
+      .addSelect('ratings.review_count', 'book_review_count');
 
     if (queryDto?.minRating !== undefined) {
-      queryBuilder.andWhere('avg.avgRating >= :minRating', { minRating: queryDto.minRating });
+      queryBuilder.andWhere('ratings.avg_rating >= :minRating', { minRating: queryDto.minRating });
     }
 
     if (queryDto?.sortBy) {
       let orderBy: string;
       if (queryDto.sortBy === 'avgRating') {
-        orderBy = 'avg.avgRating';
+        orderBy = 'ratings.avg_rating';
       } else {
         orderBy = `book.${queryDto.sortBy}`;
       }
