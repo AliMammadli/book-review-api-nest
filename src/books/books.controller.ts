@@ -1,5 +1,5 @@
-import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiOkResponse, ApiCreatedResponse, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
+import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiOkResponse, ApiCreatedResponse, ApiExtraModels, getSchemaPath, ApiQuery } from '@nestjs/swagger';
 import { Book } from './book.entity';
 import { BooksService } from './books.service';
 import { BookStatsService } from './book-stats.service';
@@ -9,9 +9,11 @@ import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { BookResponseDto } from './dto/book-response.dto';
 import { ReviewResponseDto } from '../reviews/dto/review-response.dto';
 import { Review } from 'src/reviews/review.entity';
+import { GetBooksQueryDto } from './dto/get-books-query.dto';
+
 
 @ApiTags('books')
-@ApiExtraModels(BookResponseDto, ReviewResponseDto, Book, Review)
+@ApiExtraModels(Book, Review, BookResponseDto, ReviewResponseDto, GetBooksQueryDto)
 @Controller('books')
 export class BooksController {
   constructor(
@@ -22,16 +24,16 @@ export class BooksController {
 
   @Get()
   @ApiOperation({ summary: 'Get all books' })
+  @ApiQuery({ type: GetBooksQueryDto })
   @ApiOkResponse({
     description: 'Returns an array of books with average ratings.',
     schema: {
-        type: 'array',
-        items: { $ref: getSchemaPath(BookResponseDto) },
+      type: 'array',
+      items: { $ref: getSchemaPath(BookResponseDto) },
     },
   })
-  async getBooks(): Promise<BookResponseDto[]> {
-    const books = await this.booksService.findAll();
-
+  async getBooks(@Query() queryDto: GetBooksQueryDto): Promise<BookResponseDto[]> {
+    const books = await this.booksService.findAll(queryDto);
     return books.map(book => {
       const avgRating = this.bookStatsService.calculateAvgRating(book.reviews);
       const bookResponse = new BookResponseDto();
