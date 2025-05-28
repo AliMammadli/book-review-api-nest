@@ -24,7 +24,6 @@ export class BooksController {
 
   @Get()
   @ApiOperation({ summary: 'Get all books' })
-  @ApiQuery({ type: GetBooksQueryDto })
   @ApiOkResponse({
     description: 'Returns an array of books with average ratings.',
     schema: {
